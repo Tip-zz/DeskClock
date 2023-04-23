@@ -1,0 +1,70 @@
+23-Apr-2023
+Tip Partridge
+
+Readme file for DeskClock program.
+
+This code implements a clock with an LED matrix display.
+Code was developed on Arduino IDE 1.8.19
+Target board is an Arduino Nano.
+Display is 8x32 MAX7219 based LED panel.
+Uses a DS3231 RTC from Adafruit.
+
+Clock time control via six pushbuttons: Hour up, Hour down, Minute up,
+Minute down, Up/Down X 5, and Second to 0. Clock advanced control functions
+via USB serial (115200 Baud) menu. I suggest using PuTTY for connection.
+
+Optionally Communicates via I2C to NodeMCU ESP8266 wi Wifi for timeserver
+connect and telnet remote control. ESP8266 runs ClockWifi.ino sketch.
+
+This is the menu of commands:
+
+? for menu
+
+DeskClock v0.29     Clock     Desk
+===TIME=====================================================================
+H/h  increment Hour      A   AM/PM/Military          N   Set clock Name
+M/m  increment Minute    T   display date & Time     L   Set clock Location
+ 0    zero seconds      ^T   set date & Time        ^U   Update time via NTP
+===DISPLAY==================================================================
+^B   set brightness base level            B   display ambient Brightness ADC
+^S   set brightness ADC Saturation        F   toggle Font
+===PARAMETERS===============================================================
+ P   display runtime Parameters           E   display EEPROM params
+^C   load runtime params from EEPROM     ^E   write runtime params to EEPROM
+^D   load runtime params with Defaults   ^F   write deFault params to EEPROM
+^G   display default parameters           I   Identity report
+===DEBUG====================================================================
+ V   display global Variables            ^I   Initialize display
+^R   Toggle periodic brightness report   ^X   set to compile time
+
+Command descriptions:
+
+H/h - Increment Hour up or down.
+M/m - Increment Minute up or down.
+ 0  - Sets seconds to zero. This is a zero, not an oh.
+ A  - Toggle between AM/PM and 24 hour Military style display.
+ N  - Sets the clock's Name, which is displayed in Menu header.
+ L  - Sets the clock's Location, which is displayed in Menu header.
+ I  - Displays clock Name and Location
+ T  - Displays current date & time from RTC.
+^T  - Manually set date & Time via dialog.
+^U  - Updates date & time via NTP.
+^B  - Sets brightness level (0..15) when ambient is dark.
+ B  - Displays ambient Brightness ADC.
+^S  - Set brightness ADC level (0..1023) that gives maximum brightness level (15).
+ F  - Toggles detween two available fonts, thin or thick.
+ P  - Displays runtime parameter values.
+ E  - Displays EEPROM parameter values.
+^C  - Loads runtime parameters from EEPROM.
+^E  - Writes runtime parameters to EEPROM. Do this to save current settings.
+^D  - Load runtime parameters with default values.
+^F  - Writes default parameters to EEPROM.
+^G  - Displays default parameter values.
+ V  - Displays global Variable values.
+^I  - Initialize display. Restarts LED display driver 'cuz sometimes it crashes.
+^R  - Toggle periodic brightness report, spits out ADC each 10 minutes.
+^X  - Sets date/time to compile time stored in flash.
+
+See https://github.com/Tip-zz/DeskClock for DeskClock code.
+See https://github.com/Tip-zz/ClockWifi for ClockWifi code.
+See https://imgur.com/a/GeHdwdC for photos and schematic.
