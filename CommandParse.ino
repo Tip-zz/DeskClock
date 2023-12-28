@@ -306,9 +306,9 @@ switch (c)
   case '/': newln();
             prt(F(verstr)); prt(F("     ")); prt(p.Name); prt(F("     ")); prtln(p.Location);
             prtln(F("===TIME============================================="));
-            prtln(F("H/h  Hour up/dn  A  show date/time   U  display NTP"));
-            prtln(F("M/m  Min up/dn   T  set date/Time   ^U  set via NTP"));
-            prtln(F(" 0   zero secs  ^T  AM/PM/Military   F  toggle font"));
+            prtln(F("H/h  Hour up/dn  T  show date/time   U  display NTP"));
+            prtln(F("M/m  Min up/dn  ^T  set date/Time   ^U  set via NTP"));
+            prtln(F(" 0   zero secs   A  AM/PM/Military   F  toggle font"));
             prtln(F("===BRIGHTNESS======================================="));
             prtln(F(" G  Gain     ^B  Offset     ^S  Clip     B  show"));
             prtln(F("===PARAMETERS======================================="));

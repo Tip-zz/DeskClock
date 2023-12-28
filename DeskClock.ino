@@ -22,13 +22,14 @@ Revisions:
   30-Sep-2023 (TEP) v0.33 Remove ^X set to compile time. Add ^X show wifi status, ^Z show wifi version.
   08-Oct-2023 (TEP0 v0.34 Update menu to 53 wide from 76 wide to fit iPhone telnet screen
   18-Nov-2023 (TEP) v0.35 Add daily time update at 3:00 am from NTP.
+  28-Dec-2023 (TEP) v0.36 Fix menu text for T, ^T, and A comands.
 
 18-N0v-2023 DeskClock v0.35
 Sketch uses 27412 bytes (89%) of program storage space. Maximum is 30720 bytes.
 Global variables use 927 bytes (45%) of dynamic memory, leaving 1121 bytes for local variables. Maximum is 2048 bytes.
 */
 
-#define verstr "DeskClock v0.35"
+#define verstr "DeskClock v0.36"
 
 #include <EEPROM.h>
 #include <LibPrintf.h>  // need this for sprintf %f
