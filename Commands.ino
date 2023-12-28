@@ -112,8 +112,8 @@ void printParams(Parameters *gg, const char pp[])
   {
   prt(pp); prt(F(".sBrite   ^S = ")); prtln( gg->sBrite);
   prt(pp); prt(F(".bBrite   ^B = ")); prtln( gg->bBrite);
-  prt(pp); prt(F(".hourStyle A = ")); prtln( gg->hourStyle);
-  prt(pp); prt(F(".fontN     F = ")); prtln( gg->fontN);
+  prt(pp); prt(F(".hourStyle A = ")); prtAmPmMil( gg->hourStyle);
+  prt(pp); prt(F(".fontN     F = ")); prtFont( gg->fontN);
   prt(pp); prt(F(".Name      N = ")); prtln(gg->Name);
   prt(pp); prt(F(".Location  L = ")); prtln(gg->Location);
   }

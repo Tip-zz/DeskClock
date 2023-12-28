@@ -16,9 +16,19 @@ Revisions:
   02-Apr-2023 (TEP) v0.27 Add support to get time over over I2C from WiFi.
   15-Apr-2023 (TEP) v0.28 Add Name and Location.
   22-Apr-2023 (TEP) v0.29 Code cleanup.
+  22-Jun-2023 (TEP) v0.31 Add Command U show time from NTP server.
+  05-Sep-2023 (TEP) v0.32 Add Button X + Button S updates time from NTP server.
+  26-Sep-2023 (TEP) v0.32 Fix ^U display (save values to temp).
+  30-Sep-2023 (TEP) v0.33 Remove ^X set to compile time. Add ^X show wifi status, ^Z show wifi version.
+  08-Oct-2023 (TEP0 v0.34 Update menu to 53 wide from 76 wide to fit iPhone telnet screen
+  18-Nov-2023 (TEP) v0.35 Add daily time update at 3:00 am from NTP.
+
+18-N0v-2023 DeskClock v0.35
+Sketch uses 27412 bytes (89%) of program storage space. Maximum is 30720 bytes.
+Global variables use 927 bytes (45%) of dynamic memory, leaving 1121 bytes for local variables. Maximum is 2048 bytes.
 */
 
-#define verstr "DeskClock v0.29"
+#define verstr "DeskClock v0.35"
 
 #include <EEPROM.h>
 #include <LibPrintf.h>  // need this for sprintf %f
@@ -44,12 +54,25 @@ Revisions:
 RTC_DS3231 rtc;
 DateTime now;
 bool gotRTC = false;    // true if RTC found
+// timer0 and timerNow for use with no RTC
+unsigned long timer0;   // startup time
+unsigned long timerNow;
 
 // ******* Display Panel
 // Display panel
 #include <MD_MAX72xx.h>
 #include <SPI.h>
-#define HARDWARE_TYPE MD_MAX72XX::ICSTATION_HW
+///                                  Type           hwDigRows  hwRevCols  hwRevRows
+///                                  ====           =========  =========  =========
+///#define HARDWARE_TYPE MD_MAX72XX::DR0CR0RR0_HW // false;     false;     false;
+///#define HARDWARE_TYPE MD_MAX72XX::DR0CR0RR1_HW // false;     false;     true;
+///#define HARDWARE_TYPE MD_MAX72XX::GENERIC_HW   // false;     true;      false;
+///#define HARDWARE_TYPE MD_MAX72XX::DR0CR1RR1_HW // false;     true;      true;
+///#define HARDWARE_TYPE MD_MAX72XX::FC16_HW      // true;      false;     false;
+///#define HARDWARE_TYPE MD_MAX72XX::DR1CR0RR1_HW // true;      false;     true;
+///#define HARDWARE_TYPE MD_MAX72XX::PAROLA_HW    // true;      true;      false;
+#define HARDWARE_TYPE MD_MAX72XX::ICSTATION_HW // true;      true;      true;
+///
 #define MAX_DEVICES 4   // 4 8x8 modules
 #define CLK_PIN   13  // SCK
 #define DATA_PIN  11  // MOSI
@@ -94,9 +117,11 @@ bool sec0But = false;
 #define Space 14
 
 // See Font2Hex.xlsx.
-// Thick font
+#define font0 "Thick font"
+#define font1 "Thin font"
 //const uint8_t fontP[2][15][5] PROGMEM = {
 const uint8_t fontP[] PROGMEM = {
+// Thick font
                       0x7E,   0xFF,   0xC3,   0xFF,   0x7E, 
                       0x00,   0xC6,   0xFF,   0xFF,   0xC0, 
                       0xE2,   0xF3,   0xDB,   0xCF,   0xC6, 
@@ -174,7 +199,8 @@ const byte bits[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 int didxidx;
 int didx[2][2][6] = {{{0, 6, 12, 15, 21, 27}, {3, 3, 9, 12, 18, 24}},   // digit column, 6 char, 5 char
                      {{0, 6, 12, 14, 20, 27}, {3, 3, 9, 11, 17, 24}}};
-int y, n, d, h, m, s;
+int y, n, d, h, m, s;   // current date/time
+bool timeUpdatedToday;
 bool updateRTC;         // flag to update the RTC with y, n, d, h, m, s.
 int s0;                 // last second to update display each second
 float g_ADC;            // brightness read from optic sensor
@@ -196,7 +222,7 @@ boolean gotIO = false;
 uint8_t ClientID = 1;             // Client I2C address
 char i2Str[33];                   // I2C transmit buffer
 uint8_t i2Len;                    // number of bytes in I2C transmit buffer
-#define i2RcvMax 20               // Size of I2C receive buffer
+#define i2RcvMax 21               // Size of I2C receive buffer
 volatile char I2C_rcv[i2RcvMax];  // For i2C receive ISR, received character
 volatile int I2_pnt;              // index used in I2C receive ISR to put characters into I2C_str
 volatile bool GotI2C = false;     // For i2C receive ISR, data available flag
@@ -207,7 +233,7 @@ volatile bool isLen;              // Flag to requestEvent ISR to send length
 // system clock = 16 MHz
 // timer prescale = 64;
 #define TicksPer100ms 25000   // clock ticks per 100 ms
-volatile bool g_timeout = false;           // global falg set when 100ms timer timeout.
+volatile bool g_timeout = false;           // global flag set when 100ms timer timeout.
 
 // ***************   SSSSS   EEEEEE   TTTTTTTT   UU   UU   PPPPP    *********
 // ***************  SS       EE          TT      UU   UU   PP   PP  *********
@@ -252,7 +278,8 @@ void setup()
     }
   else gotRTC = true;
   updateRTC = false;
-
+  timer0 = millis();
+  
 // start display ************************************************
   mx.begin();
   mx.clear();
@@ -329,7 +356,36 @@ void loop()
       m = now.minute();
       s = now.second();
       }
+    else
+      {
+      timerNow = millis();
+      timerNow = timerNow - timer0;
+      d = timerNow / 86400000;
+      timerNow = timerNow - d * 86400000;
+      h = timerNow / 3600000;
+      timerNow = timerNow - h * 3600000;
+      m = timerNow / 60000;
+      timerNow = timerNow - m * 60000;
+      s = timerNow / 1000;
+      }
     }
+
+// Time to update time from NTP?
+  if (h==3)
+    {
+    if (!timeUpdatedToday)
+      {
+      int ier = getI2TimeStr();   // request time/date from NTP
+      if (ier == 1)     // got it
+        {
+        rtc.adjust(DateTime( y, n, d, h, m, s));  // update RTC
+        s0 = -1;                                  // force display update
+        timeUpdatedToday = true;
+        }
+      }
+    }
+  else
+    timeUpdatedToday = false;
 
 // Update display
   if (s != s0)
@@ -391,11 +447,13 @@ void updateDisplay()
       {
       didxidx = 1;
       }
-//    shodig( Space, 0, 5);
     }
   shodig( bb, 1, 5);
 // colon
-  shodig( Colon, 2, 2);
+  if (p.fontN==1 && bb==1 && !(m>9 && m<20))    // special case for colon when lower hour digit == 1 and thin font.
+    shodig( Colon, -2, 2);
+  else
+    shodig( Colon, 2, 2);
 // minute
   bb = m;
   bb=bb%60;

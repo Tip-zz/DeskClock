@@ -5,6 +5,7 @@
 * Descrition:
 *   User input routines for string, y/n,  int, float
 * Revision History:
+*   19-Oct-2023 (TEP) Return null string for timeout
 *   
 */
 #define null 0
@@ -39,6 +40,7 @@ int getStr( char * str, int maxLen, int mode, const unsigned long timeout)
       if (timeNow - time0 > timeout)
         {
         newln();
+        str[0] = null;
         return -1;
         }
       }

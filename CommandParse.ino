@@ -36,7 +36,7 @@ switch (c)
   case 'A':                     // toggle between am/pm and military time
   case 'a': if (p.hourStyle == ampm) p.hourStyle = military;
             else p.hourStyle = ampm;
-            AmPmMil(p.hourStyle); newln();
+            prtAmPmMil(p.hourStyle);
             break;
   case 'B':                     // display ambient brightness ADC
   case 'b': iTemp = analogRead(opto);
@@ -58,6 +58,7 @@ switch (c)
             if (p.fontN > 1 || p.fontN < 0) p.fontN = 0;
             loadFont();
             s0 = -1;                                  // force display update
+            prtFont(p.fontN);
             break;
   case 'H': h += 1;             // hour up
             if (h > 23) h = 0;
@@ -109,6 +110,14 @@ switch (c)
   case 't':
             showTime();
             break;
+  case 'U':                      // display date, time from NTP
+  case 'u':
+            yy=y; nn=n; dd=d; hh=h; mm=m; ss=s;
+            ier = getI2TimeStr();
+            if (ier == 1) { showTime(); }
+            else {prt(F("Error: ")); prtln(ier);}
+            y=yy; n=nn; d=dd; h=hh; m=mm; s=ss;
+            break;
   case 'V':                     // display global variables
   case 'v': shoGlob();
             newln();
@@ -117,6 +126,8 @@ switch (c)
   case ')': s = 0;
             if (h < 0) h = 23;
             rtc.adjust(DateTime( y, n, d, h, m, s));  // update RTC
+            prtln(F("sec set to 0"));
+            showTime();
             break;
   case 2:   // ^B                  // Set brightness fit b parameter
             prt(F("Brightness offset (0..16)")); Default(p.bBrite);
@@ -150,7 +161,7 @@ switch (c)
   case 6:   // ^F                   // Load parameters to EEPROM
             prt(F("Writing default parameters to EEPROM..."));
             putD2E();
-            prt("done.");
+            prt(F("done."));
             showEPs();
             break;
   case 7:   // ^G                    // display default parameters
@@ -159,6 +170,7 @@ switch (c)
             break;
   case 9:   // ^I':                  // init display
             mx.begin();
+            prtln(F("Display init."));
             break;
   case 10:  // Ignore <LF> and <CR> = 10, 13 = ^J, ^M
   case 13:  break;
@@ -261,21 +273,58 @@ switch (c)
             break;
   case 21:  // ^U                 // Update time & date via NTP
             ier = getI2TimeStr();
-            if (ier == 1) {showTime();}
+            if (ier == 1) 
+              {
+              rtc.adjust(DateTime( y, n, d, h, m, s));  // update RTC
+              s0 = -1;                                  // force display update
+              showTime();
+              }
             else {prt(F("Error: ")); prtln(ier);}
             break;
-  case 24:  // ^X                 // load with time from last compile
-            rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-            s0 = -1;                                  // force display update
-            prtln(F("Time updated to compile time"));
+  case 24:  // ^X               // wifi status, expect 3 bytes: bool isConnected, clockStarted, telnetStarted
+            ier = getI2CmdString( 0xfe);
+            if (ier != 1) {prtln(F("error"));}
+            else
+              {
+              //if (I2_pnt == 3)  // got valid enough bytes
+              prt(F("Wifi connected: ")); prtln(byte(I2C_rcv[0]));
+              prt(F("Clock started:  ")); prtln(byte(I2C_rcv[1]));
+              prt(F("Telnet started: ")); prtln(byte(I2C_rcv[2]));
+              }
+            break;
+  case 26:  // ^Z               // wifi version, expect verstr, 20 char max plus null terminator
+            ier = getI2CmdString( 0xfd);
+            if (ier != 1) prtln(F("error"));
+            else
+              {
+              if (I2_pnt > 1)  // got at least 1 character
+                for (ier=0; ier<(I2_pnt-1); ier++) prtc(I2C_rcv[ier]);
+              newln();
+              }
             break;
   case '?':                     // display Menu  (76 char wide)
   case '/': newln();
             prt(F(verstr)); prt(F("     ")); prt(p.Name); prt(F("     ")); prtln(p.Location);
+            prtln(F("===TIME============================================="));
+            prtln(F("H/h  Hour up/dn  A  show date/time   U  display NTP"));
+            prtln(F("M/m  Min up/dn   T  set date/Time   ^U  set via NTP"));
+            prtln(F(" 0   zero secs  ^T  AM/PM/Military   F  toggle font"));
+            prtln(F("===BRIGHTNESS======================================="));
+            prtln(F(" G  Gain     ^B  Offset     ^S  Clip     B  show"));
+            prtln(F("===PARAMETERS======================================="));
+            prtln(F(" P  show Params   E  show EEPROM   ^G  show defaults"));
+            prtln(F("^E  params to EEPROM        ^F  deFaults to EEPROM"));
+            prtln(F("^D  params from Defaults    ^C  params from EEPROM"));
+            prtln(F(" N  Name          L  Location       I  show Identity"));
+            prtln(F("===DEBUG============================================"));
+            prtln(F(" V  show Variables          ^V  dump Frame buffer"));
+            prtln(F("^A  toggle briteness report ^Y  toggle loop timer"));
+            prtln(F("^X  Wifi status             ^Z  Wifi version"));
+/*
             prtln(F("===TIME====================================================================="));
-            prtln(F("H/h  increment Hour      A   AM/PM/Military          N   Set clock Name"));
-            prtln(F("M/m  increment Minute    T   display date & Time     L   Set clock Location"));
-            prtln(F(" 0    zero seconds      ^T   set date & Time        ^U   Update time via NTP"));
+            prtln(F("H/h  increment Hour     A   AM/PM/Military   N   Set Name   L   Set Location"));
+            prtln(F("M/m  increment Minute   T   display date & Time   U   Display time from NTP"));
+            prtln(F(" 0    zero seconds     ^T   set date & Time      ^U   Update time via NTP"));
             prtln(F("===DISPLAY=================================================================="));
             prtln(F("^B   set brightness base level            B   display ambient Brightness ADC"));
             prtln(F("^S   set brightness ADC Saturation        F   toggle Font"));
@@ -286,7 +335,8 @@ switch (c)
             prtln(F("^G   display default parameters           I   Identity report"));
             prtln(F("===DEBUG===================================================================="));
             prtln(F(" V   display global Variables            ^I   Initialize display"));
-            prtln(F("^R   Toggle periodic brightness report   ^X   set to compile time "));
+            prtln(F("^R   Toggle periodic brightness report"));
+*/
             break;
   default:  prt(int(c)); prtln(F(" ?"));
             break;

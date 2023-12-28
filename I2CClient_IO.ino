@@ -112,11 +112,12 @@ int sendI2Str()
 
 // *****************************************************************
 
-int getI2TimeStr()
-// get date/time string from I2C into global buffer i2Str
+int getI2CmdString( byte bCmd)
+// send special command and get get string or byte data from I2C into global buffer i2Str
+// bCmd is the special command: 0xff = get date/time, 0xfe get status, 0xfd get version
   {
   isLen = true;                   // tell requestEvent() to send 1 byte
-  i2Len = 0xff;                   // special code tells master to send date/time string
+  i2Len = bCmd;                   // special code tells master what to send
   TOInterruptOn();
   digitalWrite( reqPin, HIGH);    // flag host to request size
   digitalWrite( bsyPin, LOW);     // blink ESP LED
@@ -138,11 +139,22 @@ int getI2TimeStr()
   if (GotI2C)
     {
     GotI2C = false;
+    return 1;
     }
   else 
     {
     return -3;   // timeout receiving data!
     }
+  }
+
+// *****************************************************************
+
+int getI2TimeStr()
+// get date/time string from I2C into global buffer i2Str
+  {
+  int ier;
+  ier = getI2CmdString( 0xff);
+  if (ier != 1) return( ier);
   if (I2_pnt == 7)  // got valid date&time, update RTC
     {
     y = I2C_rcv[0] * 100 + I2C_rcv[1];
@@ -151,8 +163,6 @@ int getI2TimeStr()
     h = I2C_rcv[4];
     m = I2C_rcv[5];
     s = I2C_rcv[6];
-    rtc.adjust(DateTime( y, n, d, h, m, s));  // update RTC
-    s0 = -1;                                  // force display update
     return 1;
     }
   else 

@@ -12,6 +12,21 @@ Revisions:
 */
 void ButtonParse()
 {
+// Second zero or get time from NTP if X button is pressed
+  if(!digitalRead( sec0)) {delay(5);}
+  if(!digitalRead( sec0))
+    {
+    if (!sec0But)
+      {
+      if(digitalRead( xXX))   // X button not pressed
+        s=0;                  // set seconds to zero
+      else                    // X button pressed
+        getI2TimeStr();       // get time from NTP
+      updateRTC = true;
+      }
+    sec0But = true;
+    }
+  else sec0But = false;
 // Hour up
   if(!digitalRead( hUp)) {delay(5);}
   if(!digitalRead( hUp))
@@ -68,18 +83,6 @@ void ButtonParse()
     mDnBut = true;
     }
   else mDnBut = false;
-// Second zero
-  if(!digitalRead( sec0)) {delay(5);}
-  if(!digitalRead( sec0))
-    {
-    if (!sec0But)
-      {
-      s=0;
-      updateRTC = true;
-      }
-   sec0But = true;
-    }
-  else sec0But = false;
 //
 // Change RTC time
   if (updateRTC)
