@@ -36,6 +36,7 @@ void ButtonParse()
       if(digitalRead( xXX)) h += 1;
       else  h += 4;
       if (h > 23) h = 0;
+      if (h == timeToUpdateFromUTP) timeUpdatedToday = true;  // skip daily check
       updateRTC = true;
       }
     hUpBut = true;
@@ -50,6 +51,7 @@ void ButtonParse()
       if(digitalRead( xXX)) h -= 1;
       else  h -= 4;
       if (h < 0) h = 23;
+      if (h == timeToUpdateFromUTP) timeUpdatedToday = true;  // skip daily check
       updateRTC = true;
       }
     hDnBut = true;

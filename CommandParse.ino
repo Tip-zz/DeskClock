@@ -31,6 +31,9 @@ else  // assume isI2C
   GotI2C = false;
   }
 
+if (isCtrl) c = toupper(c) - 64;  // handling '^' preface as control character
+isCtrl = false;
+
 switch (c)
   {
   case 'A':                     // toggle between am/pm and military time
@@ -43,7 +46,7 @@ switch (c)
             prt(F("ADC Now(0..1023)= "));
             prt(iTemp);
             prt(F("    ADC(0.."));
-            prt(int(p.sBrite));
+            prt(int(p.adcClip));
             prt(F(")= "));
             prt1(g_ADC);
             prt(F("    Display= "));
@@ -55,19 +58,32 @@ switch (c)
             break;
   case 'F':                     // toggle font
   case 'f': p.fontN += 1;
-            if (p.fontN > 1 || p.fontN < 0) p.fontN = 0;
+            if (p.fontN >= nFonts || p.fontN < 0) p.fontN = 0;
             loadFont();
             s0 = -1;                                  // force display update
             prtFont(p.fontN);
             break;
+  case 'G':                     // Set brightness ADC Gain
+  case 'g': prt(F("Brightness ADC gain")); Default(p.adcGain);
+            ier = getFloat(& fTemp, 5000);
+            newln();
+            if (ier > 0)
+              {
+              p.adcGain = fTemp;
+              }
+            prt(F("Gain = "));
+            prtln((p.adcGain));
+            break;
   case 'H': h += 1;             // hour up
             if (h > 23) h = 0;
+            if (h == timeToUpdateFromUTP) timeUpdatedToday = true;  // skip daily check
             rtc.adjust(DateTime( y, n, d, h, m, s));  // update RTC
             s0 = -1;                                  // force display update
             prtln(h);
             break;
   case 'h': h -= 1;             // hour down
             if (h < 0) h = 23;
+            if (h == timeToUpdateFromUTP) timeUpdatedToday = true;  // skip daily check
             rtc.adjust(DateTime( y, n, d, h, m, s));  // update RTC
             s0 = -1;                                  // force display update
             prtln(h);
@@ -122,6 +138,8 @@ switch (c)
   case 'v': shoGlob();
             newln();
             break;
+  case '^': isCtrl = true;         // '^' treats next character as control character
+            break;
   case '0':                     // zero seconds
   case ')': s = 0;
             if (h < 0) h = 23;
@@ -130,15 +148,15 @@ switch (c)
             showTime();
             break;
   case 2:   // ^B                  // Set brightness fit b parameter
-            prt(F("Brightness offset (0..16)")); Default(p.bBrite);
+            prt(F("Brightness offset (0..16)")); Default(p.adcOffset);
             ier = getFloat(& fTemp, 5000);
             newln();
             if (ier > 0)
               {
-              p.bBrite = fTemp;
+              p.adcOffset = fTemp;
               }
             prt(F("fit b = "));
-            prtln((p.bBrite));
+            prtln((p.adcOffset));
             break;
   case 3:   // ^C                   // Load global parameters from EEPROM
             prt(F("Loading global parameters from EEPROM..."));
@@ -191,15 +209,15 @@ switch (c)
             else prtln(F("Off"));
             break;
   case 19:  // ^S                  // set brightness ADC Saturation
-            prt(F("Brightness ADC Saturation (0..1023)")); Default(p.sBrite);
+            prt(F("Brightness ADC Saturation (0..1023)")); Default(p.adcClip);
             ier = getInt(& iTemp, 5000);
             newln();
             if (ier > 0)
               {
-              p.sBrite = iTemp;
+              p.adcClip = iTemp;
               }
             prt(F("ADC Sat = "));
-            prtln((p.sBrite));
+            prtln((p.adcClip));
             break;
   case 20:  // ^T                // set date, time
             yy=y; nn=n; dd=d; hh=h; mm=m; ss=s;
@@ -266,6 +284,7 @@ switch (c)
             if (updateRTC)
               {
               y=yy; n=nn; d=dd; h=hh; m=mm; s=ss;
+              if (h == timeToUpdateFromUTP) timeUpdatedToday = true;  // skip daily check
               prt(F("Time updated.\r\n"));
               }
             else

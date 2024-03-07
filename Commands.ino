@@ -27,8 +27,9 @@ void shoGlob()
 //********************************************************
 void setG2D( Parameters * gg)
   {
-  gg->sBrite = d_sBrite;
-  gg->bBrite = d_bBrite;
+  gg->adcClip = d_adcClip;
+  gg->adcOffset = d_adcOffset;
+  gg->adcGain = d_adcGain;
   gg->hourStyle = d_hourStyle;
   gg->fontN = d_fontN;
   strcpy(gg->Name, d_Name);
@@ -110,12 +111,13 @@ void showEPs()
 
 void printParams(Parameters *gg, const char pp[])
   {
-  prt(pp); prt(F(".sBrite   ^S = ")); prtln( gg->sBrite);
-  prt(pp); prt(F(".bBrite   ^B = ")); prtln( gg->bBrite);
-  prt(pp); prt(F(".hourStyle A = ")); prtAmPmMil( gg->hourStyle);
-  prt(pp); prt(F(".fontN     F = ")); prtFont( gg->fontN);
-  prt(pp); prt(F(".Name      N = ")); prtln(gg->Name);
-  prt(pp); prt(F(".Location  L = ")); prtln(gg->Location);
+  prt(pp); prt(F(".adcClip   ^S = ")); prtln( gg->adcClip);
+  prt(pp); prt(F(".adcOffset ^B = ")); prtln( gg->adcOffset);
+  prt(pp); prt(F(".adcGain    G = ")); prtln( gg->adcGain);
+  prt(pp); prt(F(".hourStyle  A = ")); prtAmPmMil( gg->hourStyle);
+  prt(pp); prt(F(".fontN      F = ")); prtFont( gg->fontN);
+  prt(pp); prt(F(".Name       N = ")); prtln(gg->Name);
+  prt(pp); prt(F(".Location   L = ")); prtln(gg->Location);
   }
 
 //**********************************************************

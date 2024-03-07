@@ -18,10 +18,17 @@ void shodig( int dig, int posn, int columns)
 // posn is display column to start. First (left) column is 0.
 // columns is number of colums to write.
 // if posn < 0 then shift left by -posn.  This for thin colon with hour = 1
+// if posn < 0 and columns < 0 then shift right by -posn.  This for sans with minute = 1*.
   {
   int cc, pp;    // cc = col, pp = pointer into frame buffer
   if (posn < 0)
-    pp = didx[p.fontN][didxidx][-posn] -1;  // shift column left
+    if (columns < 0)
+      {
+      pp = didx[p.fontN][didxidx][-posn] + 1;  // shift column right
+      columns = -columns;
+      }
+    else
+      pp = didx[p.fontN][didxidx][-posn] - 1;  // shift column left
   else
     pp = didx[p.fontN][didxidx][posn];
   for (cc=0; cc<columns; cc++)  // write columns to display buffer
@@ -42,8 +49,25 @@ void prtAmPmMil(hour_style hourStyle)
 
 void prtFont(int font)
   {
-  if (font==0) prtln(F(font0));
-  else prtln(F(font1));
+  prt(font);
+  prt(F(" = "));
+  switch(font)
+    {
+    case 0:  prtln(F(font0));
+             break;
+    case 1:  prtln(F(font1));
+             break;
+    case 2:  prtln(F(font2));
+             break;
+    case 3:  prtln(F(font3));
+             break;
+    case 4:  prtln(F(font4));
+             break;
+    case 5:  prtln(F(font5));
+             break;
+    default: prtln(F("unknown"));
+             break;
+    }
   }
  
 //**********************************************************
